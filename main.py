@@ -19,6 +19,8 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
+import open3d as o3d
+import time
 
 # Part of the code is referred from: https://github.com/floodsung/LearningToCompare_FSL
 
@@ -583,17 +585,17 @@ def main():
     textio = IOStream('checkpoints/' + args.exp_name + '/run.log')
     textio.cprint(str(args))
 
-    if args.dataset == 'modelnet40':
-        train_loader = DataLoader(
-            ModelNet40(num_points=args.num_points, partition='train', gaussian_noise=args.gaussian_noise,
-                       unseen=args.unseen, factor=args.factor),
-            batch_size=args.batch_size, shuffle=True, drop_last=True)
-        test_loader = DataLoader(
-            ModelNet40(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
-                       unseen=args.unseen, factor=args.factor),
-            batch_size=args.test_batch_size, shuffle=False, drop_last=False)
-    else:
-        raise Exception("not implemented")
+    # if args.dataset == 'modelnet40':
+    #     train_loader = DataLoader(
+    #         ModelNet40(num_points=args.num_points, partition='train', gaussian_noise=args.gaussian_noise,
+    #                    unseen=args.unseen, factor=args.factor),
+    #         batch_size=args.batch_size, shuffle=True, drop_last=True)
+    #     test_loader = DataLoader(
+    #         ModelNet40(num_points=args.num_points, partition='test', gaussian_noise=args.gaussian_noise,
+    #                    unseen=args.unseen, factor=args.factor),
+    #         batch_size=args.test_batch_size, shuffle=False, drop_last=False)
+    # else:
+    #     raise Exception("not implemented")
 
     if args.model == 'dcp':
         net = DCP(args).cuda()
@@ -613,7 +615,53 @@ def main():
     else:
         raise Exception('Not implemented')
     if args.eval:
-        test(args, net, test_loader, boardio, textio)
+        # test(args, net, test_loader, boardio, textio)
+        print("***************************************************")
+        print("pytorch version :", torch.__version__)
+        torch.set_printoptions(precision=None, threshold=1000, edgeitems=None, linewidth=None, profile=None)
+        print("Testing IO for point cloud ...")
+        pointcloud = o3d.io.read_point_cloud("data/falan_model.pcd")
+        print(pointcloud)
+
+        print("Downsample the point cloud with a voxel of 0.004")
+        pointcloud_down =pointcloud.voxel_down_sample(voxel_size=0.004)
+        print(pointcloud_down)
+        # o3d.visualization.draw_geometries([pointcloud])
+        # o3d.io.write_point_cloud("copy_of_fragment.pcd", pcd)
+        points = np.array(pointcloud_down.points)
+        points=points.transpose(1,0)
+        
+        # rot=[[0.1,  0.2, 0.3],
+        #      [0.4,  0.5, 0.6],
+        #      [0.7,  0.8, 0.9]]
+
+        # points_tgt=np.dot(rot,points)
+        points_tgt=points
+        
+        src=torch.tensor([points])
+        src=src.float()
+        print(src)
+        tgt=torch.tensor([points_tgt])
+        tgt=tgt.float()
+        print(tgt)
+
+        src = src.cuda()
+        tgt = tgt.cuda()
+        
+        start_time=time.clock()
+        rotation_ab_pred, translation_ab_pred, rotation_ba_pred, translation_ba_pred = net(src, tgt)
+        end_time=time.clock()
+        print("dcp time:",(end_time - start_time))
+        print(rotation_ab_pred,".2f")
+        print(rotation_ba_pred)
+        print(translation_ab_pred)
+        print(translation_ba_pred)
+        # pcd_o3d = o3d.geometry.PointCloud()
+        # a=rotation_ab_pred.cpu().numpy()
+        # b=tgt.cpu().numpy()
+        # pcd_o3d.points = o3d.utility.Vector3dVector(xyz)
+        # pcd.normals = o3d.utility.Vector3dVector(nxnynz)
+        # pcd.colors = o3d.utility.Vector3dVector(rgb)
     else:
         train(args, net, train_loader, test_loader, boardio, textio)
 
