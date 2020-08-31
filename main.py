@@ -572,6 +572,8 @@ def main():
                         help='Divided factor for rotations')
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
+    parser.add_argument('--downsample', type=bool, default=False, metavar='N',
+                        help='Wheter to downdample')
 
     args = parser.parse_args()
     torch.backends.cudnn.deterministic = True
@@ -618,10 +620,16 @@ def main():
         # test(args, net, test_loader, boardio, textio)
         print("***************************************************")
         print("pytorch version :", torch.__version__)
-        torch.set_printoptions(precision=None, threshold=1000, edgeitems=None, linewidth=None, profile=None)
         print("Testing IO for point cloud ...")
         pointcloud = o3d.io.read_point_cloud("data/falan_model.pcd")
         print(pointcloud)
+
+        # if args.downsample:
+            # points = np.array(pointcloud.points)
+            # points=np.dot(points, [[0.001, 1, 1],[1, 0.001, 1],[1, 1, 0.001]])
+            # pointcloud.points = o3d.utility.Vector3dVector(points)
+
+
 
         print("Downsample the point cloud with a voxel of 0.004")
         pointcloud_down =pointcloud.voxel_down_sample(voxel_size=0.004)
@@ -660,6 +668,17 @@ def main():
         # pcd_o3d.points = o3d.utility.Vector3dVector(xyz)
         # pcd.normals = o3d.utility.Vector3dVector(nxnynz)
         # pcd.colors = o3d.utility.Vector3dVector(rgb)
+
+        #the trace function only suitable for torch.nn.module model
+        #judge whether our net class is torch.nn.module
+        print("net is torch.nn.Module:",isinstance(net,torch.nn.Module)))
+        #before the process
+        #we should load the weights to net,and send net to a gpu device
+        #input should be at the same device as net locate
+        dcp_script_model = torch.jit.trace(net, (src, tgt))
+        #save script module
+        torch.jit.save(dcp_script_model,'libtorch_model/dcp.pt')
+
     else:
         train(args, net, train_loader, test_loader, boardio, textio)
 
