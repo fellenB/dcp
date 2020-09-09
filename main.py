@@ -600,7 +600,7 @@ def main():
     #     raise Exception("not implemented")
 
     if args.model == 'dcp':
-        net = DCP(args).cuda()
+        net = DCP().cuda()
         if args.eval:
             if args.model_path is '':
                 model_path = 'checkpoints' + '/' + args.exp_name + '/models/model.best.t7'
@@ -671,7 +671,7 @@ def main():
 
         #the trace function only suitable for torch.nn.module model
         #judge whether our net class is torch.nn.module
-        print("net is torch.nn.Module:",isinstance(net,torch.nn.Module)))
+        print("net is torch.nn.Module:",isinstance(net,torch.nn.Module))
         #before the process
         #we should load the weights to net,and send net to a gpu device
         #input should be at the same device as net locate

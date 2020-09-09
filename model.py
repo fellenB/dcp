@@ -373,9 +373,10 @@ class Transformer(nn.Module):
 
 
 class SVDHead(nn.Module):
-    def __init__(self, args):
+    def __init__(self):
         super(SVDHead, self).__init__()
-        self.emb_dims = args.emb_dims
+        # self.emb_dims = args.emb_dims
+        self.emb_dims = 512
         self.reflect = nn.Parameter(torch.eye(3), requires_grad=False)
         self.reflect[2, 2] = -1
 
@@ -426,30 +427,37 @@ class SVDHead(nn.Module):
 
 
 class DCP(nn.Module):
-    def __init__(self, args):
+    def __init__(self):
         super(DCP, self).__init__()
-        self.emb_dims = args.emb_dims
-        self.cycle = args.cycle
-        if args.emb_nn == 'pointnet':
-            self.emb_nn = PointNet(emb_dims=self.emb_dims)
-        elif args.emb_nn == 'dgcnn':
-            self.emb_nn = DGCNN(emb_dims=self.emb_dims)
-        else:
-            raise Exception('Not implemented')
+        # self.emb_dims = args.emb_dims
+        # self.cycle = args.cycle
+        # if args.emb_nn == 'pointnet':
+        #     self.emb_nn = PointNet(emb_dims=self.emb_dims)
+        # elif args.emb_nn == 'dgcnn':
+        #     self.emb_nn = DGCNN(emb_dims=self.emb_dims)
+        # else:
+        #     raise Exception('Not implemented')
 
-        if args.pointer == 'identity':
-            self.pointer = Identity()
-        elif args.pointer == 'transformer':
-            self.pointer = Transformer(args=args)
-        else:
-            raise Exception("Not implemented")
+        # if args.pointer == 'identity':
+        #     self.pointer = Identity()
+        # elif args.pointer == 'transformer':
+        #     self.pointer = Transformer(args=args)
+        # else:
+        #     raise Exception("Not implemented")
 
-        if args.head == 'mlp':
-            self.head = MLPHead(args=args)
-        elif args.head == 'svd':
-            self.head = SVDHead(args=args)
-        else:
-            raise Exception('Not implemented')
+        # if args.head == 'mlp':
+        #     self.head = MLPHead(args=args)
+        # elif args.head == 'svd':
+        #     self.head = SVDHead(args=args)
+        # else:
+        #     raise Exception('Not implemented')
+
+        self.emb_dims = 512
+        self.cycle = False
+        self.emb_nn = DGCNN(emb_dims=self.emb_dims)
+        self.pointer = Identity()
+        self.head = SVDHead()
+        
 
     def forward(self, *input):
         src = input[0]
